@@ -1,7 +1,24 @@
 from sklearn.model_selection import StratifiedShuffleSplit
+import pandas as pd
+import numpy as np
+"""
+UNIVERSAL FUNCS
+"""
 
 
 def initial_sss(df, label, test_size, out_file):
+    """
+    This funtion splits data into three parts:
+     - train_df(dataframe containing both train data and labels)
+     - test_df(dataframe containing just test data to be passed to predict on)
+     - test_df_y_true(labels for test_df)
+    Function uses StratifiedShuffleSplit from sklearn.model_selection
+    :param df: pandas.DataFrame to be split
+    :param label: name of the label column
+    :param test_size: int from 0 to 1, percentage of data thats gonna be in test_df
+    :param out_file: pathlib.Path() object, absolute path to directory where the split data shoould go
+    :return: None
+    """
 
     sss = StratifiedShuffleSplit(n_splits=1, test_size=test_size,
                                  random_state=42)
@@ -20,3 +37,211 @@ def initial_sss(df, label, test_size, out_file):
     test_df[label].to_csv(out_file / 'test_df_y_true.csv', index=False)
 
     print('Split successful')
+
+
+def basic_cat_col_data(df, col, label, show_vals):
+    """
+    This function basic info about categorical column
+    :param df: pandas DataFrame
+    :param col: column name to display info about
+    :param label: label of df
+    :param show_vals: how much values to show in value counts
+    :return:
+    """
+    print(f'Null values: {df[col].isnull().sum()}')
+    print(f'Unique: {df[col].nunique()}')
+
+    col_val_counts = df[col].value_counts()[:show_vals]
+    print(f'Vals: \n {col_val_counts}')
+    top_vals = col_val_counts[:10].index
+    for val in top_vals:
+        print(f'Current city: {val}')
+        print(df[df[col] == val][label].value_counts(normalize=True))
+
+
+"""
+DATAFRAME PREPROCESSING:
+"""
+
+
+def drop_na(df):
+    df = df.dropna(thresh=24)
+    return df
+
+
+"""
+Name COLUMN PREPROCESSING:
+"""
+
+
+def get_endings(df):
+    """
+    This function changes Name col to just ending of the name if its in most
+     used endings otherwise its Other
+    :param df: pandas DataFrame to change
+    :return: modified dataframe
+    """
+    most_used_ends = ['INC', 'INC.', 'LLC', 'Inc.', 'TION', 'Inc', 'PANY']
+
+    for end in most_used_ends:
+        df['Name'] = df['Name'].apply(lambda x:
+                                      end if str(x).endswith(end)
+                                      else x)
+
+    df['Name'] = df['Name'].apply(lambda x: x if str(x) in most_used_ends
+                                  else 'Other')
+
+    df = df.rename(columns={'Name': 'name_end'})
+
+    return df
+
+
+"""
+City COLUMN PREPROCESSING:
+"""
+
+
+def drop_col(df, col):
+    df = df.drop(col, 1)
+    return df
+
+
+"""
+State COLUMN PREPROCESSING:
+"""
+
+
+def get_states_rates(df, label):
+    """
+    This function returns dataframe with chrgoff_rate for each state
+    calculated from entire df and its label
+    :param df:
+    :param label:
+    :return: states_rates
+    """
+    states = df['State'].value_counts().index
+    chrgoff_rates = []
+
+    for state in states:
+        val_counts = df[df['State'] == state][label].value_counts(normalize=True)
+
+        chrgoff_rate = val_counts[1]
+        chrgoff_rates.append(chrgoff_rate)
+
+    state_rates = pd.DataFrame({'state': states,
+                                'chrgoff_rate': chrgoff_rates})
+
+    state_rates = state_rates.sort_values(by='chrgoff_rate', ascending=True)
+
+    state_rates['chrgoff_rate'] = state_rates['chrgoff_rate'].apply(
+        lambda x: round(x, 2))
+
+    return state_rates
+
+
+def group_rates(x):
+    """
+    This is custom funtion to be used in pandas.Series.apply() and returns
+    series with values grouped based on similar rates
+    :param x: element of series
+    :return: group encoding for single element of series
+    """
+
+    if x < 0.11:
+        group = 'u_11'
+    elif 0.10 < x < 0.15:
+        group = 'u_15'
+    elif 0.14 < x < 0.19:
+        group = 'u_19'
+    elif 0.18 < x < 0.23:
+        group = 'u_23'
+    else:
+        group = 'u_max'
+    return group
+
+
+def get_state_rate_groups(states_rates):
+    """
+    This function returns lists of states in groups based on chrgoff_rate,
+    f.e. u_11_states means all states with chrgoff_rate smaller than 11%
+        u_max_states means all states with worst chrgoff_rates starting from
+        last groups upper threshold (23 in this case)
+    :param states_rates: pandas.Dataframe returned from get_states_rates()
+    :return: lists of 5 groups based on similar chrgoff_rates
+    """
+    states_rates['chrgoff_rate'] = states_rates['chrgoff_rate'].apply(
+        group_rates)
+
+    u_11_states = states_rates[states_rates['chrgoff_rate'] == 'u_11']
+    u_11_states = u_11_states['state'].tolist()
+
+    u_15_states = states_rates[states_rates['chrgoff_rate'] == 'u_15']
+    u_15_states = u_15_states['state'].tolist()
+
+    u_19_states = states_rates[states_rates['chrgoff_rate'] == 'u_19']
+    u_19_states = u_19_states['state'].tolist()
+
+    u_23_states = states_rates[states_rates['chrgoff_rate'] == 'u_23']
+    u_23_states = u_23_states['state'].tolist()
+
+    u_max_states = states_rates[states_rates['chrgoff_rate'] == 'u_max']
+    u_max_states = u_max_states['state'].tolist()
+
+    return u_11_states, u_15_states, u_19_states, u_23_states, u_max_states
+
+
+def transform_state_col(x, u_11_states, u_15_states, u_19_states,
+                        u_23_states, u_max_states):
+    """
+    This is custom function to be used in pandas.Series.apply(), it
+    tranforms every state abbrev to category f.e(u_11, u_15)
+    based on its states chrgoff_rate
+
+    :param x: single element of the series
+    :param u_11_states: list of states from states_to_rate_categories()
+    :param u_15_states: list of states from states_to_rate_categories()
+    :param u_19_states: list of states from states_to_rate_categories()
+    :param u_23_states: list of states from states_to_rate_categories()
+    :param u_max_states: list of states from states_to_rate_categories()
+    :return: returns group assigned to element
+    """
+    group = ''
+
+    if x in u_11_states:
+        group = 'u_11'
+
+    elif x in u_15_states:
+        group = 'u_15'
+
+    elif x in u_19_states:
+        group = 'u_19'
+
+    elif x in u_23_states:
+        group = 'u_23'
+
+    elif x in u_max_states:
+        group = 'u_max'
+
+    return group
+
+
+def states_to_rate_categories(df, label):
+    """
+    This function puts together other preprocessing functions and
+    transforms state names to groups based on their chrgoff_rates(label),
+    at the and deletes nan values
+    :param df: pandas.DataFrame with data to tranform
+    :param label: label of data
+    :return: returns dataframe with tranformed State column
+    """
+
+
+
+    states_rates = get_states_rates(df, label)
+
+    df['State'] = df['State'].apply(transform_state_col,
+                                    args=get_state_rate_groups(states_rates))
+
+    df = df[df['State'] != '']
+
+    return df

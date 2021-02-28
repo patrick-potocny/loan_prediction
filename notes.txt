@@ -1,0 +1,31 @@
+Columns:
+- Name - same names for more loans(Subway) - usaually bigger companies
+		- add feature(Boolean) for bigger company (has more loans than n) and has good PIF/CHROFF rate, 
+		good_rate_comps are just 5000 samples DONT DO THIS
+	- 10 nans 
+	- 83522 names end with INC. rate: P I F     0.882378   CHGOFF    0.117622
+		                          P I F     0.816746  CHGOFF    0.183254(doesnt end)
+	      Endings with bad rates Inc, Inc., LLC
+	- PREPROCESSING: Change name variable to Endings 
+		-done using get_endings() 
+			
+- City - 23 nans 
+	- remove Parenthesis and stuff in them in city names 
+	- 29799 unique city names 
+ 	- PREPROCESSING: droping col due to high amount of nuique city names 
+		- done using drop_city_col(df)
+
+- State - 51 states 
+	
+	- PREPROCESSING: make mutliple types of categories to replace all 51 states bcs its too much for onehot,
+			group them based on similar chrgoff_rates
+		- done using states_to_rate_categories(df, label), 
+		-try more categories 
+	
+- Zip - too much nunique values and we already got state column to handle location 
+	- PREPROCESSING: droping col due to high amount of nuique city names 
+		- done using drop_city_col(df)
+
+- Bank - 
+Todos:
+- make every column numerical
