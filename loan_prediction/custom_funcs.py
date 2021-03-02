@@ -39,13 +39,13 @@ def initial_sss(df, label, test_size, out_file):
     print('Split successful')
 
 
-def basic_cat_col_data(df, col, label, show_vals):
+def basic_cat_col_data(df, col, label='MIS_Status', show_vals=10):
     """
     This function basic info about categorical column
     :param df: pandas DataFrame
     :param col: column name to display info about
-    :param label: label of df
-    :param show_vals: how much values to show in value counts
+    :param label: label of df, Default MIS_Status
+    :param show_vals: how much values to show in value counts, Default 10
     :return:
     """
     print(f'Null values: {df[col].isnull().sum()}')
@@ -53,9 +53,9 @@ def basic_cat_col_data(df, col, label, show_vals):
 
     col_val_counts = df[col].value_counts()[:show_vals]
     print(f'Vals: \n {col_val_counts}')
-    top_vals = col_val_counts[:10].index
+    top_vals = col_val_counts[:show_vals].index
     for val in top_vals:
-        print(f'Current city: {val}')
+        print(f'Current category: {val}')
         print(df[df[col] == val][label].value_counts(normalize=True))
 
 
@@ -66,6 +66,8 @@ DATAFRAME PREPROCESSING:
 
 def drop_na(df):
     df = df.dropna(thresh=24)
+    df = df.dropna(subset=['Name', 'City', 'State', 'Bank', 'BankState',
+                           'NewExist', 'RevLineCr', 'LowDoc', 'DisbursementDate'])
     return df
 
 
@@ -235,13 +237,95 @@ def states_to_rate_categories(df, label):
     :return: returns dataframe with tranformed State column
     """
 
-
-
     states_rates = get_states_rates(df, label)
 
     df['State'] = df['State'].apply(transform_state_col,
                                     args=get_state_rate_groups(states_rates))
 
     df = df[df['State'] != '']
+
+    return df
+
+
+"""
+BankState COLUMN PREPROCESSING:
+"""
+
+
+# not used for now
+# def replace_small_states(df):
+#     other_replace_dict = {'PR':'Other',
+#                           'GU':'Other',
+#                           'AN':'Other',
+#                           'EN':'Other',
+#                           'VI':'Other'}
+#     df['BankState'] = df['BankState'].replace(other_replace_dict)
+#
+#     return df
+
+
+def tranform_bank_state(df):
+    """
+    This function transforms BankState column to same_state which can be:
+    - True = Bussiness state and bank state are equal
+    - False = when they are not the same
+    :param df: dataframe containing BankStete column
+    :return: df with Bankstate tranformed to same_state
+    """
+    df['BankState'] = df['State'] == df['BankState']
+    df = df.rename(columns={'BankState': 'same_state'})
+
+    return df
+
+
+"""
+NAICS COLUMN PREPROCESSING 
+"""
+
+def transform_naics_col(df):
+    """
+    This function tranforms NAICS column, it takes just the two first
+    two numbers of the whole code and last 6 less represented values
+    labels as Other
+    :param df: pd.DAtaFrame
+    :return:transformed df
+    """
+
+    df['NAICS'] = df['NAICS'].apply(lambda x: str(x)[:2])
+
+    small_naics_ix = df['NAICS'].value_counts()[-6:].index
+    df['NAICS'] = df['NAICS'].apply(lambda x:
+                                    'Other' if x in small_naics_ix
+                                    else x)
+
+    return df
+
+
+"""
+ApprovalDate COLUMN PREPROCESSING 
+"""
+
+
+def approval_date_to_datetime(df):
+    df['ApprovalDate'] = df['ApprovalDate'].apply(lambda x:
+                                                  '0'+x if x[1] == '-'
+                                                  else x)
+
+    df['ApprovalDate'] = pd.to_datetime(df['ApprovalDate'])
+    return df
+
+
+"""
+ApprovalDate COLUMN PREPROCESSING 
+"""
+
+
+def clean_str(x):
+    if isinstance(x, str):
+        x = x.replace('A', '')
+    return x
+
+def clean_approval_fy_col(df):
+    df['ApprovalFY'] = df['ApprovalFY'].apply(clean_str).astype('int64')
 
     return df

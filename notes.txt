@@ -13,7 +13,7 @@ Columns:
 	- remove Parenthesis and stuff in them in city names 
 	- 29799 unique city names 
  	- PREPROCESSING: droping col due to high amount of nuique city names 
-		- done using drop_city_col(df)
+		- done using drop_col(df)
 
 - State - 51 states 
 	
@@ -26,6 +26,40 @@ Columns:
 	- PREPROCESSING: droping col due to high amount of nuique city names 
 		- done using drop_city_col(df)
 
-- Bank - 
+- Bank - PREPROCESSING: droping col due to high amount of nuique names and bank name shouldnt be important
+
+- BankState - banks in the same state as bussiness are having bettr chrgoff_rates
+	- PREPROCESSING: 
+			- drop null (70)
+			- calssifing PR GU AN EN VI as Other due to low amount of samples
+			- done using replace_small_states
+			- modified this col which is true if state and bank state are same 
+
+- NAICS - a lot of 0s which are null, i will leave them as a value that naics code wasnt specified 
+	- PREPROCESSING: 
+		- taken just first two numbers(sector) of the whole code
+		- value Other was asigned to the 6 smallest sectors 
+
+- ApprovalDate - 
+		- PREPROCESSING:
+			- convert to datetime objects 
+
+- ApprovalFY - 
+		- PREPROCESSING:
+			- need to clean it to all being ints bcs there are strings and one value has A th the end
+
+- Term - longer terms tend to have better chrgoff rates, a lot of less represented terms  
+		- PREPROCESSING: remove 0s, value with less than x samples merge with next one 
+
+ 	 	
 Todos:
 - make every column numerical
+- try more categories in state
+- try removing rows with 0s in NAICS
+- check back how to use Approval date, consider use of year 
+- revisit ApprovalFY, consider use of year 
+
+
+General preprocessing:
+Nulls dropped - 
+Columns dropped - ['City', 'Zip', 'Bank', '']
