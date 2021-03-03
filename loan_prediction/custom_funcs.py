@@ -307,6 +307,13 @@ ApprovalDate COLUMN PREPROCESSING
 
 
 def approval_date_to_datetime(df):
+    """
+    This function at fisrt cleans the data by adding 0s at the start of
+    value bcs pythons datetime string expects day to be zero padded
+    decimal.Then it transforms the whole column to datetime dtype.
+    :param df: pandas.DataFrame
+    :return: df with tranformed col
+    """
     df['ApprovalDate'] = df['ApprovalDate'].apply(lambda x:
                                                   '0'+x if x[1] == '-'
                                                   else x)
@@ -321,11 +328,100 @@ ApprovalDate COLUMN PREPROCESSING
 
 
 def clean_str(x):
+    """
+    This function is to be used ind pd.Series.apply(), and it cleans col
+    from As.
+    :param x: element passed by apply
+    :return: element
+    """
     if isinstance(x, str):
         x = x.replace('A', '')
     return x
 
+
 def clean_approval_fy_col(df):
+    """
+    This function cleans approval_fy and makes them int64 dtype.
+    :param df: pandas.DataFrame
+    :return: df with tranformed col
+    """
     df['ApprovalFY'] = df['ApprovalFY'].apply(clean_str).astype('int64')
 
     return df
+
+
+"""
+Term COLUMN PREPROCESSING 
+"""
+
+
+def term_transformer(df):
+    """
+    This funtion removes all zeros bcs term cannot be 0, then it makes all
+    terms bigger than 300 into single value
+    :param df: pandas.DataFrame
+    :return: df with tranformed col
+    """
+    df = df[df['Term'] != 0]
+
+    df['Term'] = df['Term'].apply(lambda x:
+                                  310 if x > 300
+                                  else x)
+
+    return df
+
+
+"""
+ NoEmp COLUMN PREPROCESSING 
+"""
+
+
+def transform_noemp(df):
+    """
+    This funtion groups the higher numbers of employees into same values
+    bcs of their low frequency, this function should be replaced by
+    group_values()
+    :param df: pandas.DataFrame
+    :return: df with tranformed col
+    """
+    df['NoEmp'] = df['NoEmp'].apply(lambda x:
+                                    110 if x > 100
+                                    else x)
+
+    df['NoEmp'] = df['NoEmp'].apply(lambda x:
+                                    90 if (x < 100) and x > 90
+                                    else x)
+
+    df['NoEmp'] = df['NoEmp'].apply(lambda x:
+                                    80 if (x < 90) and x > 80
+                                    else x)
+    return df
+
+
+"""
+ CreateJob COLUMN PREPROCESSING 
+"""
+
+
+def group_values(df, col, range_list):
+    """
+    This function groups values based on predefined ranges, can be used
+    for values with low frequencies to get rif of outliers.
+    :param df: pandas.DataFrame
+    :param col: string, column name to be tranformed
+    :param range_list: list of tuples, each tuple represents range,
+    (lower_range, upper_range) - both are exclusive
+    f.e [(0, 11)-from 1 to 10, (10, 21) - from 11 to 20]
+    :return:
+    """
+    for range in range_list:
+        df[col] = df[col].apply(lambda x:
+                                range[0] if (x < range[1]) and (x > range[0])
+                                else x)
+
+    return df
+
+
+"""
+  COLUMN PREPROCESSING 
+"""
