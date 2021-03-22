@@ -48,72 +48,18 @@ Columns:
 		- PREPROCESSING:
 			- need to clean it to all being ints bcs there are strings and one value has A th the end
 
-- Term - longer terms tend to have better chrgoff rates, a lot of less represented terms 
-	- most used Terms[12, 36, 48, 60, 84, 120, 180, 240, 300] 
-		- PREPROCESSING: remove 0s, value with less than x samples merge with next one/categorize them
+- Term - longer terms tend to have better chrgoff rates, a lot of less represented terms  
+		- PREPROCESSING: remove 0s, value with less than x samples merge with next one 
 
-- NoEmp - 5000 0s(explore), leave them there 
-	- PREPROCESSING: - combine low frequency values in the upper range 
-
-- NewExist - might drop NewEXist seems to have no influence on chrgoff_rate
-	- NO PREPROCESSING: droping col bcs of no influence on chrgoff rate 
-
-- CreateJob - 
-	- PREPROCESSING: group_values that have similar value counts and chrgoff rates
-
-- RetainJob -  
-	- PREPROCESSING: group_values that have similar value counts and chrgoff rates
-
-- FranchiseCode - 
-	- PREPROCESSING: grouped all values above 1 to category named 2 
-
-- UrbanRural - 
-	-NO PREPROCESSING:
-
-- RevLineCr - has some wierd values like T, ., -
-	- PREPROCESSING: rename 0s as N due to same chrgoff_rate, drop the wierd values, 
-
-- LowDoc - has some wierd less frequent values 
-	- PREPROCESSING: drop those wierd values 
-
-- ChgOffDate - 
-	- PREPROCESSING: droping column bcs of no usefull info
-
-- DisbursementDate - 
-	- PREPROCESSING:
-			- convert to datetime objects
-
-- DisbursementGross -  
-	- PREPROCESSING: 
-		- droping col bcs of high corr with sba_appv
-
-- GrAppv -  
-	- PREPROCESSING: 
-		- droping col bcs of high corr with sba_app 
-
-- SBA_Appv-  
-	- PREPROCESSING:
-		- cleaning the string and converting it to int64
-
-
-- BalanceGross - doesnt undersatnd it, almost all values are the same
-	- PREPROCESSING: droping col for no usefull indormation 
-	
-- MIS_Status(label) - 
-	- PREPROCESSING: Replaced with true false values, renamed col to Default 
-
-- ChgOffPrinGr - 
-	- PREPROCESSING: Droping the column bcs of no usefull info 
-	
+ 	 	
 Todos:
-
-  -Todos during modeling and testing:
-	- used architectures: 90, 45/    20, 20/    80, Dropout, 80, Dropout/    20,15,4/
+- make every column numerical
+- try more categories in state
+- try removing rows with 0s in NAICS
+- check back how to use Approval date, consider use of year 
+- revisit ApprovalFY, consider use of year 
 
 
 General preprocessing:
-Nulls dropped - ['Name', 'City', 'State', 'Bank', 'BankState', 'NewExist', 'RevLineCr', 'LowDoc', 
-		'DisbursementDate']
-
-
-pd.set_option('display.max_rows', 10)
+Nulls dropped - 
+Columns dropped - ['City', 'Zip', 'Bank', '']
